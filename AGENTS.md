@@ -170,7 +170,7 @@ Before opening a GitHub pull request, run the issue PR preflight check after the
 pnpm paperclipai issue github-pr-preflight <issue-id> --repo <owner/repo> --base <base-branch> --head <head-branch>
 ```
 
-This preflight does not block PR creation. PRs to `Connsulting/*` and `TheConnMan/*` are allowlisted. PRs to any other GitHub owner may be opened so the board can inspect the diff in GitHub, but they require final board/user approval on the GitHub PR before merge.
+This preflight does not block PR creation. PRs to `Connsulting/*` and `TheConnMan/*` are allowlisted for PR creation. PRs to any other GitHub owner may be opened so the board can inspect the diff in GitHub, but they require final board/user approval on the GitHub PR before merge. The preflight result is not merge approval for any repository.
 
 After QA has tested a non-allowlisted PR, run:
 
@@ -179,6 +179,7 @@ pnpm paperclipai issue github-pr-preflight <issue-id> --repo <owner/repo> --base
 ```
 
 Use the generated handoff guidance when assigning the ticket to the board/user for final review. Do not merge a non-allowlisted GitHub PR until approval is recorded on the GitHub PR.
+Paperclip does not accept caller-supplied approval flags as durable merge evidence; check the GitHub PR review state before merge.
 
 ## 11. Definition of Done
 

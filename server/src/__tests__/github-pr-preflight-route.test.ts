@@ -62,7 +62,7 @@ describe("GitHub PR preflight route", () => {
     mockIssueService.getByIdentifier.mockResolvedValue(null);
   });
 
-  it("allows allowlisted owners without final approval guidance", async () => {
+  it("allows allowlisted PR creation without reporting global merge readiness", async () => {
     const res = await request(await createApp())
       .post("/api/issues/issue-1/github-pr-preflight")
       .send({
@@ -73,8 +73,10 @@ describe("GitHub PR preflight route", () => {
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.allowed).toBe(true);
+    expect(res.body.prCreationAllowed).toBe(true);
     expect(res.body.requiresFinalApproval).toBe(false);
-    expect(res.body.mergeEligible).toBe(true);
+    expect(res.body.mergeEligible).toBe(false);
+    expect(res.body.mergeBlockedReason).toBe("merge_eligibility_not_authoritative");
   });
 
   it("allows non-allowlisted PR creation while requiring final PR approval", async () => {
@@ -94,7 +96,7 @@ describe("GitHub PR preflight route", () => {
     expect(res.body.handoffComment).toContain("Final PR Approval Required");
   });
 
-  it("returns merge eligibility after QA passes and GitHub PR approval is recorded", async () => {
+  it("does not treat caller-supplied GitHub approval as verified merge evidence", async () => {
     const res = await request(await createApp())
       .post("/api/issues/issue-1/github-pr-preflight")
       .send({
@@ -110,9 +112,13 @@ describe("GitHub PR preflight route", () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toMatchObject({
       allowed: true,
+      prCreationAllowed: true,
       requiresFinalApproval: true,
-      mergeEligible: true,
-      handoffComment: null,
+      mergeEligible: false,
+      mergeBlockedReason: "approval_evidence_not_verified",
+      approvalEvidenceVerified: false,
+      handoffComment: expect.stringContaining("Final PR Approval Required"),
     });
+    expect(res.body.message).toContain("has not verified durable GitHub PR approval evidence");
   });
 });

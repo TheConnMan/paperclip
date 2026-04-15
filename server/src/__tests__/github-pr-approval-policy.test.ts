@@ -12,7 +12,7 @@ const target = {
 };
 
 describe("github PR approval policy", () => {
-  it("allows allowlisted repository owners without final approval guidance", () => {
+  it("allows allowlisted repository owners to create PRs without reporting global merge readiness", () => {
     const result = evaluateGitHubPrApproval({
       ...target,
       repositoryFullName: "Connsulting/widgets",
@@ -20,11 +20,15 @@ describe("github PR approval policy", () => {
 
     expect(result).toMatchObject({
       allowed: true,
+      prCreationAllowed: true,
       requiresFinalApproval: false,
-      mergeEligible: true,
+      mergeEligible: false,
+      mergeBlockedReason: "merge_eligibility_not_authoritative",
+      approvalEvidenceVerified: false,
       owner: "connsulting",
       handoffComment: null,
     });
+    expect(result.message).toContain("does not grant merge eligibility");
   });
 
   it("normalizes owner comparisons case-insensitively", () => {
@@ -57,15 +61,15 @@ describe("github PR approval policy", () => {
       ...target,
       prUrl: "https://github.com/octo/widgets/pull/123",
       qaStatus: "pending",
-      githubPrApproved: true,
     });
 
     expect(result.allowed).toBe(true);
     expect(result.mergeEligible).toBe(false);
+    expect(result.mergeBlockedReason).toBe("qa_not_passed");
     expect(result.message).toContain("QA status is pending");
   });
 
-  it("blocks merge eligibility until GitHub PR approval is recorded", () => {
+  it("blocks merge eligibility until durable GitHub PR approval evidence is verified", () => {
     const result = evaluateGitHubPrApproval({
       ...target,
       prUrl: "https://github.com/octo/widgets/pull/123",
@@ -74,27 +78,46 @@ describe("github PR approval policy", () => {
 
     expect(result.allowed).toBe(true);
     expect(result.mergeEligible).toBe(false);
-    expect(result.message).toContain("not merge-eligible until board/user approval is recorded");
+    expect(result.mergeBlockedReason).toBe("approval_evidence_not_verified");
+    expect(result.message).toContain("has not verified durable GitHub PR approval evidence");
     expect(result.handoffComment).toContain("https://github.com/octo/widgets/pull/123");
     expect(result.handoffComment).toContain("- QA status: passed");
   });
 
-  it("allows merge eligibility after QA passes and GitHub PR approval is recorded", () => {
+  it("does not let caller-supplied approval make a non-allowlisted PR merge-eligible", () => {
     const result = evaluateGitHubPrApproval({
       ...target,
       prUrl: "https://github.com/octo/widgets/pull/123",
       qaStatus: "passed",
       githubPrApproved: true,
       approvedBy: "Board",
+    } as Parameters<typeof evaluateGitHubPrApproval>[0] & { githubPrApproved: boolean; approvedBy: string });
+
+    expect(result).toMatchObject({
+      allowed: true,
+      prCreationAllowed: true,
+      requiresFinalApproval: true,
+      mergeEligible: false,
+      mergeBlockedReason: "approval_evidence_not_verified",
+      approvalEvidenceVerified: false,
+    });
+    expect(result.message).toContain("has not verified durable GitHub PR approval evidence");
+  });
+
+  it("treats a QA-passed non-allowlisted PR as ready for final handoff only", () => {
+    const result = evaluateGitHubPrApproval({
+      ...target,
+      prUrl: "https://github.com/octo/widgets/pull/123",
+      qaStatus: "passed",
     });
 
     expect(result).toMatchObject({
       allowed: true,
       requiresFinalApproval: true,
-      mergeEligible: true,
-      handoffComment: null,
+      mergeEligible: false,
+      handoffComment: expect.stringContaining("Final PR Approval Required"),
     });
-    expect(result.message).toContain("approval is recorded by Board");
+    expect(result.message).toContain("ready for final board/user handoff");
   });
 
   it("builds handoff comments with PR link, QA status, and approval request", () => {

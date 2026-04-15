@@ -11,15 +11,16 @@ export interface GitHubPrApprovalTarget {
   reason?: string | null;
   prUrl?: string | null;
   qaStatus?: GitHubPrQaStatus | null;
-  githubPrApproved?: boolean | null;
-  approvedBy?: string | null;
   requestApprovalFrom?: string | null;
 }
 
 export interface GitHubPrApprovalResult {
   allowed: boolean;
+  prCreationAllowed: boolean;
   requiresFinalApproval: boolean;
   mergeEligible: boolean;
+  mergeBlockedReason: string | null;
+  approvalEvidenceVerified: boolean;
   owner: string;
   repositoryFullName: string;
   message: string;
@@ -76,8 +77,11 @@ export function evaluateGitHubPrApproval(target: GitHubPrApprovalTarget): GitHub
   if (!owner || !repositoryFullName.includes("/")) {
     return {
       allowed: false,
+      prCreationAllowed: false,
       requiresFinalApproval: true,
       mergeEligible: false,
+      mergeBlockedReason: "invalid_repository",
+      approvalEvidenceVerified: false,
       owner,
       repositoryFullName,
       message: "GitHub PR preflight requires repositoryFullName in owner/repo form.",
@@ -92,11 +96,16 @@ export function evaluateGitHubPrApproval(target: GitHubPrApprovalTarget): GitHub
   if (allowlisted) {
     return {
       allowed: true,
+      prCreationAllowed: true,
       requiresFinalApproval: false,
-      mergeEligible: true,
+      mergeEligible: false,
+      mergeBlockedReason: "merge_eligibility_not_authoritative",
+      approvalEvidenceVerified: false,
       owner,
       repositoryFullName,
-      message: `GitHub PR target ${repositoryFullName} is owned by allowlisted org ${owner}; PR creation is allowed without pre-open approval.`,
+      message:
+        `GitHub PR target ${repositoryFullName} is owned by allowlisted org ${owner}; ` +
+        "PR creation is allowed without pre-open approval. This preflight does not grant merge eligibility; QA and human GitHub PR approval remain required by the normal PR process.",
       handoffComment: null,
     };
   }
@@ -110,8 +119,11 @@ export function evaluateGitHubPrApproval(target: GitHubPrApprovalTarget): GitHub
   if (!prUrl) {
     return {
       allowed: true,
+      prCreationAllowed: true,
       requiresFinalApproval: true,
       mergeEligible: false,
+      mergeBlockedReason: "missing_pr_url",
+      approvalEvidenceVerified: false,
       owner,
       repositoryFullName,
       message:
@@ -124,8 +136,11 @@ export function evaluateGitHubPrApproval(target: GitHubPrApprovalTarget): GitHub
   if (qaStatus !== "passed") {
     return {
       allowed: true,
+      prCreationAllowed: true,
       requiresFinalApproval: true,
       mergeEligible: false,
+      mergeBlockedReason: "qa_not_passed",
+      approvalEvidenceVerified: false,
       owner,
       repositoryFullName,
       message:
@@ -135,28 +150,19 @@ export function evaluateGitHubPrApproval(target: GitHubPrApprovalTarget): GitHub
     };
   }
 
-  if (!target.githubPrApproved) {
-    return {
-      allowed: true,
-      requiresFinalApproval: true,
-      mergeEligible: false,
-      owner,
-      repositoryFullName,
-      message:
-        `GitHub PR ${prUrl} is not merge-eligible until board/user approval is recorded on the GitHub PR. ` +
-        "Assign the ticket to the board/user with the PR link, QA status, and a direct request for PR approval.",
-      handoffComment,
-    };
-  }
-
   return {
     allowed: true,
+    prCreationAllowed: true,
     requiresFinalApproval: true,
-    mergeEligible: true,
+    mergeEligible: false,
+    mergeBlockedReason: "approval_evidence_not_verified",
+    approvalEvidenceVerified: false,
     owner,
     repositoryFullName,
-    message: `GitHub PR ${prUrl} is merge-eligible for ${repositoryFullName}; QA passed and GitHub PR approval is recorded${target.approvedBy?.trim() ? ` by ${target.approvedBy.trim()}` : ""}.`,
-    handoffComment: null,
+    message:
+      `GitHub PR ${prUrl} has passed QA and is ready for final board/user handoff. ` +
+      "Paperclip has not verified durable GitHub PR approval evidence, so this preflight does not mark it merge-eligible. Assign the ticket to the board/user with the PR link and request approval on the GitHub PR before merge.",
+    handoffComment,
   };
 }
 

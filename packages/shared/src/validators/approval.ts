@@ -44,8 +44,6 @@ export const githubPrPreApprovalSchema = z.object({
   reason: z.string().trim().min(1).optional().nullable(),
   prUrl: z.string().trim().url().optional().nullable(),
   qaStatus: z.enum(["not_run", "pending", "passed", "failed"]).optional().nullable(),
-  githubPrApproved: z.boolean().optional().nullable(),
-  approvedBy: z.string().trim().min(1).optional().nullable(),
   requestApprovalFrom: z.string().trim().min(1).optional().nullable(),
 });
 

@@ -78,8 +78,6 @@ interface IssueGitHubPrPreflightOptions extends BaseClientOptions {
   reason?: string;
   prUrl?: string;
   qaStatus?: "not_run" | "pending" | "passed" | "failed";
-  githubPrApproved?: boolean;
-  approvedBy?: string;
   requestApprovalFrom?: string;
 }
 
@@ -404,8 +402,6 @@ export function registerIssueCommands(program: Command): void {
       .option("--reason <text>", "Reason for opening the pull request")
       .option("--pr-url <url>", "Opened GitHub pull request URL")
       .option("--qa-status <status>", "QA status: not_run, pending, passed, or failed", "not_run")
-      .option("--github-pr-approved", "Confirm board/user approval is recorded on the GitHub PR", false)
-      .option("--approved-by <name>", "Board/user who approved the GitHub PR")
       .option("--request-approval-from <name>", "Board/user to assign for final PR approval")
       .action(async (issueId: string, opts: IssueGitHubPrPreflightOptions) => {
         try {
@@ -418,8 +414,6 @@ export function registerIssueCommands(program: Command): void {
             reason: opts.reason,
             prUrl: opts.prUrl,
             qaStatus: opts.qaStatus,
-            githubPrApproved: opts.githubPrApproved,
-            approvedBy: opts.approvedBy,
             requestApprovalFrom: opts.requestApprovalFrom,
           });
           const result = await ctx.api.post<GitHubPrApprovalResult>(
