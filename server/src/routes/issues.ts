@@ -14,6 +14,8 @@ import {
   feedbackTargetTypeSchema,
   feedbackTraceStatusSchema,
   feedbackVoteValueSchema,
+  evaluateGitHubPrApproval,
+  githubPrPreApprovalSchema,
   upsertIssueFeedbackVoteSchema,
   linkIssueApprovalSchema,
   issueDocumentKeySchema,
@@ -1259,6 +1261,23 @@ export function issueRoutes(
     assertCompanyAccess(req, issue.companyId);
     const approvals = await issueApprovalsSvc.listApprovalsForIssue(id);
     res.json(approvals);
+  });
+
+  router.post("/issues/:id/github-pr-preflight", validate(githubPrPreApprovalSchema), async (req, res) => {
+    const id = req.params.id as string;
+    const issue = await svc.getById(id);
+    if (!issue) {
+      res.status(404).json({ error: "Issue not found" });
+      return;
+    }
+    assertCompanyAccess(req, issue.companyId);
+
+    const result = evaluateGitHubPrApproval(req.body);
+    if (!result.allowed) {
+      throw forbidden(result.message);
+    }
+
+    res.json(result);
   });
 
   router.post("/issues/:id/approvals", validate(linkIssueApprovalSchema), async (req, res) => {

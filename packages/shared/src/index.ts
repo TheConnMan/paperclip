@@ -161,6 +161,24 @@ export {
   validateConfiguredBindMode,
 } from "./network-bind.js";
 
+export {
+  GITHUB_PR_APPROVAL_ALLOWED_OWNERS,
+  GITHUB_PR_PRE_APPROVAL_ALLOWED_OWNERS,
+  GITHUB_PR_QA_STATUSES,
+  buildGitHubPrFinalApprovalHandoffComment,
+  evaluateGitHubPrApproval,
+  evaluateGitHubPrPreApproval,
+  getGitHubRepositoryOwner,
+  isGitHubPrApprovalAllowedOwner,
+  isGitHubPrPreApprovalAllowedOwner,
+  normalizeGitHubRepositoryOwner,
+  type GitHubPrApprovalResult,
+  type GitHubPrApprovalTarget,
+  type GitHubPrQaStatus,
+  type GitHubPrPreApprovalResult,
+  type GitHubPrPreApprovalTarget,
+} from "./github-pr-approval-policy.js";
+
 export type {
   Company,
   FeedbackVote,
@@ -528,6 +546,7 @@ export {
   requestApprovalRevisionSchema,
   resubmitApprovalSchema,
   addApprovalCommentSchema,
+  githubPrPreApprovalSchema,
   type CreateApproval,
   type UpsertBudgetPolicy,
   type ResolveBudgetIncident,
@@ -535,6 +554,7 @@ export {
   type RequestApprovalRevision,
   type ResubmitApproval,
   type AddApprovalComment,
+  type GitHubPrPreApproval,
   envBindingPlainSchema,
   envBindingSecretRefSchema,
   envBindingSchema,

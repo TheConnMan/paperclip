@@ -35,3 +35,18 @@ export const addApprovalCommentSchema = z.object({
 });
 
 export type AddApprovalComment = z.infer<typeof addApprovalCommentSchema>;
+
+export const githubPrPreApprovalSchema = z.object({
+  repositoryFullName: z.string().trim().min(3).regex(/^[^/\s]+\/[^/\s]+$/, "Expected owner/repo"),
+  owner: z.string().trim().min(1).optional().nullable(),
+  baseBranch: z.string().trim().min(1),
+  headBranch: z.string().trim().min(1),
+  reason: z.string().trim().min(1).optional().nullable(),
+  prUrl: z.string().trim().url().optional().nullable(),
+  qaStatus: z.enum(["not_run", "pending", "passed", "failed"]).optional().nullable(),
+  githubPrApproved: z.boolean().optional().nullable(),
+  approvedBy: z.string().trim().min(1).optional().nullable(),
+  requestApprovalFrom: z.string().trim().min(1).optional().nullable(),
+});
+
+export type GitHubPrPreApproval = z.infer<typeof githubPrPreApprovalSchema>;

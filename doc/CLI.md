@@ -110,8 +110,13 @@ pnpm paperclipai issue create --company-id <company-id> --title "..." [--descrip
 pnpm paperclipai issue update <issue-id> [--status in_progress] [--comment "..."]
 pnpm paperclipai issue comment <issue-id> --body "..." [--reopen]
 pnpm paperclipai issue checkout <issue-id> --agent-id <agent-id> [--expected-statuses todo,backlog,blocked]
+pnpm paperclipai issue github-pr-preflight <issue-id> --repo <owner/repo> --base <base-branch> --head <head-branch> [--pr-url <url>] [--qa-status not_run|pending|passed|failed] [--github-pr-approved] [--reason "..."]
 pnpm paperclipai issue release <issue-id>
 ```
+
+Run `issue github-pr-preflight` immediately before creating a GitHub pull request. It allows PR creation for every target so reviewers can inspect the GitHub diff. `Connsulting/*` and `TheConnMan/*` targets are allowlisted; other owners require final board/user approval on the GitHub PR before merge.
+
+After QA tests a non-allowlisted PR, run the same command with `--pr-url` and `--qa-status passed`. The command prints the handoff guidance to use when assigning the ticket to the board/user for GitHub PR approval. Add `--github-pr-approved` only after the GitHub PR approval is recorded.
 
 ## Agent Commands
 

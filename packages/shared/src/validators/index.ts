@@ -196,11 +196,13 @@ export {
   requestApprovalRevisionSchema,
   resubmitApprovalSchema,
   addApprovalCommentSchema,
+  githubPrPreApprovalSchema,
   type CreateApproval,
   type ResolveApproval,
   type RequestApprovalRevision,
   type ResubmitApproval,
   type AddApprovalComment,
+  type GitHubPrPreApproval,
 } from "./approval.js";
 
 export {

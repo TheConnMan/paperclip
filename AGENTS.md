@@ -164,6 +164,22 @@ When creating a pull request (via `gh pr create` or any other method), you **mus
 - **Model Used** — the AI model that produced or assisted with the change (provider, exact model ID, context window, capabilities). Write "None — human-authored" if no AI was used.
 - **Checklist** — all items checked
 
+Before opening a GitHub pull request, run the issue PR preflight check after the target repository owner is known and before using either the GitHub connector or `gh pr create`:
+
+```sh
+pnpm paperclipai issue github-pr-preflight <issue-id> --repo <owner/repo> --base <base-branch> --head <head-branch>
+```
+
+This preflight does not block PR creation. PRs to `Connsulting/*` and `TheConnMan/*` are allowlisted. PRs to any other GitHub owner may be opened so the board can inspect the diff in GitHub, but they require final board/user approval on the GitHub PR before merge.
+
+After QA has tested a non-allowlisted PR, run:
+
+```sh
+pnpm paperclipai issue github-pr-preflight <issue-id> --repo <owner/repo> --base <base-branch> --head <head-branch> --pr-url <github-pr-url> --qa-status passed
+```
+
+Use the generated handoff guidance when assigning the ticket to the board/user for final review. Do not merge a non-allowlisted GitHub PR until approval is recorded on the GitHub PR.
+
 ## 11. Definition of Done
 
 A change is done when all are true:

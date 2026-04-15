@@ -4,7 +4,9 @@ import {
   addIssueCommentSchema,
   checkoutIssueSchema,
   createIssueSchema,
+  githubPrPreApprovalSchema,
   type FeedbackTrace,
+  type GitHubPrApprovalResult,
   updateIssueSchema,
   type Issue,
   type IssueComment,
@@ -66,6 +68,19 @@ interface IssueCommentOptions extends BaseClientOptions {
 interface IssueCheckoutOptions extends BaseClientOptions {
   agentId: string;
   expectedStatuses?: string;
+}
+
+interface IssueGitHubPrPreflightOptions extends BaseClientOptions {
+  repo: string;
+  owner?: string;
+  base: string;
+  head: string;
+  reason?: string;
+  prUrl?: string;
+  qaStatus?: "not_run" | "pending" | "passed" | "failed";
+  githubPrApproved?: boolean;
+  approvedBy?: string;
+  requestApprovalFrom?: string;
 }
 
 interface IssueFeedbackOptions extends BaseClientOptions {
@@ -371,6 +386,56 @@ export function registerIssueCommands(program: Command): void {
           const ctx = resolveCommandContext(opts);
           const updated = await ctx.api.post<Issue>(`/api/issues/${issueId}/release`, {});
           printOutput(updated, { json: ctx.json });
+        } catch (err) {
+          handleCommandError(err);
+        }
+      }),
+  );
+
+  addCommonClientOptions(
+    issue
+      .command("github-pr-preflight")
+      .description("Get GitHub PR creation and final approval guidance for an issue")
+      .argument("<issueId>", "Issue ID")
+      .requiredOption("--repo <owner/repo>", "Target repository full name")
+      .option("--owner <owner>", "Target repository owner (defaults to owner from --repo)")
+      .requiredOption("--base <branch>", "Target base branch")
+      .requiredOption("--head <branch>", "Source head branch")
+      .option("--reason <text>", "Reason for opening the pull request")
+      .option("--pr-url <url>", "Opened GitHub pull request URL")
+      .option("--qa-status <status>", "QA status: not_run, pending, passed, or failed", "not_run")
+      .option("--github-pr-approved", "Confirm board/user approval is recorded on the GitHub PR", false)
+      .option("--approved-by <name>", "Board/user who approved the GitHub PR")
+      .option("--request-approval-from <name>", "Board/user to assign for final PR approval")
+      .action(async (issueId: string, opts: IssueGitHubPrPreflightOptions) => {
+        try {
+          const ctx = resolveCommandContext(opts);
+          const payload = githubPrPreApprovalSchema.parse({
+            repositoryFullName: opts.repo,
+            owner: opts.owner,
+            baseBranch: opts.base,
+            headBranch: opts.head,
+            reason: opts.reason,
+            prUrl: opts.prUrl,
+            qaStatus: opts.qaStatus,
+            githubPrApproved: opts.githubPrApproved,
+            approvedBy: opts.approvedBy,
+            requestApprovalFrom: opts.requestApprovalFrom,
+          });
+          const result = await ctx.api.post<GitHubPrApprovalResult>(
+            `/api/issues/${issueId}/github-pr-preflight`,
+            payload,
+          );
+          if (!result) throw new Error("GitHub PR preflight returned an empty response");
+          if (ctx.json) {
+            printOutput(result, { json: true });
+            return;
+          }
+          console.log(result.message);
+          if (result.handoffComment) {
+            console.log();
+            console.log(result.handoffComment);
+          }
         } catch (err) {
           handleCommandError(err);
         }
